@@ -14,6 +14,12 @@ type Config struct {
 	JWT      JWTConfig
 	COS      COSConfig
 	Log      LogConfig
+	Admin    AdminConfig
+}
+
+type AdminConfig struct {
+	Username string
+	Password string
 }
 
 type RedisConfig struct {
@@ -96,6 +102,10 @@ func Load() *Config {
 			MaxAge:     getEnvInt("LOG_MAX_AGE", 30),
 			Compress:   getEnvBool("LOG_COMPRESS", true),
 			Console:    getEnvBool("LOG_CONSOLE", true),
+		},
+		Admin: AdminConfig{
+			Username: getEnv("ADMIN_USERNAME", "admin"),
+			Password: getEnv("ADMIN_PASSWORD", ""),
 		},
 	}
 }

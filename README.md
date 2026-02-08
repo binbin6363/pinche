@@ -75,6 +75,8 @@ go run cmd/main.go
 - `DB_NAME`：数据库名，默认 pinche
 - `JWT_SECRET`：JWT 密钥
 - `JWT_EXPIRE_HOUR`：Token 过期时间（小时），默认 168
+- `ADMIN_USERNAME`：运营后台管理员用户名，默认 admin
+- `ADMIN_PASSWORD`：运营后台管理员密码（**必须设置**，否则无法登录后台）
 
 ### 3. 启动前端应用
 

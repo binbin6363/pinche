@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"pinche/config"
 	"pinche/internal/logger"
 	"pinche/internal/middleware"
 	"pinche/internal/model"
@@ -12,10 +13,11 @@ import (
 
 type UserHandler struct {
 	service *service.UserService
+	cfg     *config.Config
 }
 
-func NewUserHandler(service *service.UserService) *UserHandler {
-	return &UserHandler{service: service}
+func NewUserHandler(service *service.UserService, cfg *config.Config) *UserHandler {
+	return &UserHandler{service: service, cfg: cfg}
 }
 
 func (h *UserHandler) Register(c *gin.Context) {
@@ -145,4 +147,38 @@ func (h *UserHandler) AdminGetStats(c *gin.Context) {
 
 	logger.Debug("Admin retrieved stats")
 	c.JSON(http.StatusOK, model.Success(stats))
+}
+
+// AdminLogin handles admin login request
+func (h *UserHandler) AdminLogin(c *gin.Context) {
+	var req struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, model.Error(model.ErrCodeBadRequest, "参数错误"))
+		return
+	}
+
+	if !middleware.ValidateAdminCredentials(h.cfg, req.Username, req.Password) {
+		logger.Warn("Admin login failed: invalid credentials",
+			"username", req.Username,
+			"client_ip", c.ClientIP())
+		c.JSON(http.StatusOK, model.Error(model.ErrCodeUnauthorized, "用户名或密码错误"))
+		return
+	}
+
+	token, err := middleware.GenerateAdminToken(req.Username, h.cfg.JWT.Secret, h.cfg.JWT.ExpireHour)
+	if err != nil {
+		logger.Error("Admin login failed: token generation error", "error", err)
+		c.JSON(http.StatusOK, model.Error(model.ErrCodeInternal, "登录失败"))
+		return
+	}
+
+	logger.Info("Admin logged in successfully", "username", req.Username, "client_ip", c.ClientIP())
+	c.JSON(http.StatusOK, model.Success(gin.H{
+		"token":    token,
+		"username": req.Username,
+	}))
 }

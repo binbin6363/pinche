@@ -29,7 +29,7 @@ func Setup(cfg *config.Config, wsHub *websocket.Hub) *gin.Engine {
 	uploadService := service.NewUploadService(cfg)
 
 	// handlers
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(userService, cfg)
 	tripHandler := handler.NewTripHandler(tripService)
 	matchHandler := handler.NewMatchHandler(matchService)
 	notificationHandler := handler.NewNotificationHandler(notificationService)
@@ -89,8 +89,11 @@ func Setup(cfg *config.Config, wsHub *websocket.Hub) *gin.Engine {
 		auth.GET("/resource/url", uploadHandler.GetSignedURL)
 	}
 
-	// admin routes (should add admin auth middleware in production)
+	// admin routes
+	r.POST("/api/admin/login", userHandler.AdminLogin)
+	
 	admin := r.Group("/api/admin")
+	admin.Use(middleware.AdminAuthMiddleware(cfg))
 	{
 		admin.GET("/announcements", announcementHandler.ListAll)
 		admin.POST("/announcements", announcementHandler.Create)

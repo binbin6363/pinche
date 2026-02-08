@@ -1,8 +1,6 @@
 package service
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"time"
 
@@ -15,9 +13,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// salt must match frontend
-const passwordSalt = "pinche_2024_salt"
-
 type UserService struct {
 	repo   *repository.UserRepository
 	config *config.Config
@@ -28,13 +23,6 @@ func NewUserService(cfg *config.Config) *UserService {
 		repo:   repository.NewUserRepository(),
 		config: cfg,
 	}
-}
-
-// hashWithSalt performs SHA256 hash with salt (same as frontend)
-func hashWithSalt(password string) string {
-	salted := password + passwordSalt
-	hash := sha256.Sum256([]byte(salted))
-	return hex.EncodeToString(hash[:])
 }
 
 func (s *UserService) Register(req *model.UserRegisterReq) (*model.User, error) {

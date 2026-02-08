@@ -52,7 +52,7 @@
       </div>
 
       <div class="mt-6 text-center text-xs text-gray-400">
-        <p>默认账号: admin / admin123</p>
+        <p>请在服务端配置 ADMIN_USERNAME 和 ADMIN_PASSWORD</p>
       </div>
     </div>
   </div>
@@ -62,6 +62,8 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { hashPassword } from '@/utils/crypto'
+import api from '@/utils/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -76,14 +78,14 @@ async function handleLogin() {
   loading.value = true
 
   try {
-    if (username.value === 'admin' && password.value === 'admin123') {
-      authStore.setToken('admin_token_' + Date.now())
-      router.replace('/')
-    } else {
-      error.value = '用户名或密码错误'
-    }
+    const data = await api.post('/admin/login', {
+      username: username.value,
+      password: hashPassword(password.value)
+    })
+    authStore.setToken(data.token)
+    router.replace('/')
   } catch (e) {
-    error.value = e.response?.data?.message || '登录失败'
+    error.value = e.message || '登录失败'
   } finally {
     loading.value = false
   }

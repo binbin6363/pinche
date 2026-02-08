@@ -1,0 +1,42 @@
+# 环境配置（包含敏感信息）
+server/.env
+.env
+.env.local
+.env.*.local
+
+# 依赖目录
+app/node_modules
+admin/node_modules
+node_modules
+
+# 日志文件
+server/logs/
+*.log
+logs/
+
+# 构建产物（可选，根据需要决定是否提交）
+app/dist/
+admin/dist/
+
+# IDE 和编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Go 构建产物
+server/pinche
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 临时文件
+*.tmp
+*.temp

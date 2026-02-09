@@ -6,5 +6,5 @@ import CryptoJS from 'crypto-js'
  * @returns {string} - MD5 hashed password
  */
 export function hashPassword(password) {
-  return CryptoJS.MD5(password).toString(CryptoJS.enc.Hex)
+  return CryptoJS.MD5(password).toString()
 }

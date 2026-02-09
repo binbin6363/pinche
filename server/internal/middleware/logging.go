@@ -120,21 +120,18 @@ func maskJSONField(data, field string) string {
 		`"` + field + `": "`,
 	}
 	for _, pattern := range patterns {
-		for {
-			idx := bytes.Index([]byte(data), []byte(pattern))
-			if idx == -1 {
-				break
-			}
-			start := idx + len(pattern)
-			end := start
-			for end < len(data) && data[end] != '"' {
-				end++
-			}
-			if end < len(data) {
-				data = data[:start] + "****" + data[end:]
-			} else {
-				break
-			}
+		idx := bytes.Index([]byte(data), []byte(pattern))
+		if idx == -1 {
+			continue
+		}
+		start := idx + len(pattern)
+		end := start
+		for end < len(data) && data[end] != '"' {
+			end++
+		}
+		if end < len(data) {
+			// replace the value with **** and include closing quote
+			data = data[:start] + "****" + data[end:]
 		}
 	}
 	return data

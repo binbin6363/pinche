@@ -37,7 +37,7 @@ func (s *UserService) Register(req *model.UserRegisterReq) (*model.User, error) 
 		return nil, errors.New("手机号已注册")
 	}
 
-	// password is already SHA256 hashed from frontend, bcrypt it for storage
+	// password is already MD5 hashed from frontend, bcrypt it for storage
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		logger.Error("Hash password failed", "error", err)
@@ -76,8 +76,15 @@ func (s *UserService) Login(req *model.UserLoginReq) (*model.UserLoginResp, erro
 		return nil, errors.New("账号已被封禁，请联系客服")
 	}
 
-	// password from frontend is SHA256 hashed, compare with bcrypt stored password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	// validate stored password is a valid bcrypt hash (must start with $2a$ or $2b$ and be 60 chars)
+	storedPwd := user.Password
+	if len(storedPwd) != 60 || (storedPwd[:4] != "$2a$" && storedPwd[:4] != "$2b$") {
+		logger.Error("Invalid bcrypt hash in database", "user_id", user.ID, "phone", logger.MaskPhone(req.Phone), "pwd_len", len(storedPwd))
+		return nil, errors.New("密码数据异常，请联系客服重置")
+	}
+
+	// password from frontend is MD5 hashed, compare with bcrypt stored password
+	if err := bcrypt.CompareHashAndPassword([]byte(storedPwd), []byte(req.Password)); err != nil {
 		logger.Warn("Login failed: wrong password", "user_id", user.ID, "phone", logger.MaskPhone(req.Phone))
 		return nil, errors.New("用户名或密码错误")
 	}

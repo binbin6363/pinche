@@ -17,7 +17,7 @@ func Setup(cfg *config.Config, wsHub *websocket.Hub) *gin.Engine {
 	r.Use(middleware.LoggingMiddleware())
 
 	// serve uploaded files as static
-	r.Static("/uploads", "./uploads")
+	r.Static("/api/uploads", "./uploads")
 
 	// services
 	userService := service.NewUserService(cfg)

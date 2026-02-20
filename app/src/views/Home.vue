@@ -320,13 +320,18 @@ onMounted(async () => {
     // ignore
   }
 
-  // fetch recommended trips
+  // fetch recommended trips (exclude current user's trips)
   try {
-    const result = await tripStore.fetchTrips({ 
+    const params = { 
       page: 1, 
       page_size: 5,
       trip_type: targetTripType.value
-    })
+    }
+    // exclude current user's trips if logged in
+    if (userStore.user?.open_id) {
+      params.exclude_user_id = userStore.user.open_id
+    }
+    const result = await tripStore.fetchTrips(params)
     trips.value = result.list || []
   } finally {
     loading.value = false

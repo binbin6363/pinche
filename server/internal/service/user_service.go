@@ -136,6 +136,18 @@ func (s *UserService) Update(userID uint64, req *model.UserUpdateReq) (*model.Us
 	if req.Province != "" {
 		user.Province = req.Province
 	}
+	// contact info - allow empty string to clear
+	user.ContactPhone = req.ContactPhone
+	user.ContactWechat = req.ContactWechat
+	// emergency contact
+	user.EmergencyContactName = req.EmergencyContactName
+	user.EmergencyContactPhone = req.EmergencyContactPhone
+	user.EmergencyContactRelation = req.EmergencyContactRelation
+	// car info
+	user.CarNumber = req.CarNumber
+	user.CarBrand = req.CarBrand
+	user.CarModel = req.CarModel
+	user.CarColor = req.CarColor
 
 	if err := s.repo.Update(user); err != nil {
 		return nil, err

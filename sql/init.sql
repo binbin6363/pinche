@@ -16,6 +16,18 @@ CREATE TABLE IF NOT EXISTS users (
     status TINYINT NOT NULL DEFAULT 0 COMMENT '状态: 0-正常 1-封禁',
     city VARCHAR(50) NOT NULL DEFAULT '' COMMENT '城市',
     province VARCHAR(50) NOT NULL DEFAULT '' COMMENT '省份',
+    -- contact info
+    contact_phone VARCHAR(20) NOT NULL DEFAULT '' COMMENT '联系手机号',
+    contact_wechat VARCHAR(50) NOT NULL DEFAULT '' COMMENT '联系微信号',
+    -- emergency contact
+    emergency_contact_name VARCHAR(50) NOT NULL DEFAULT '' COMMENT '紧急联系人姓名',
+    emergency_contact_phone VARCHAR(20) NOT NULL DEFAULT '' COMMENT '紧急联系人电话',
+    emergency_contact_relation VARCHAR(20) NOT NULL DEFAULT '' COMMENT '紧急联系人关系',
+    -- car info
+    car_number VARCHAR(10) NOT NULL DEFAULT '' COMMENT '车牌号',
+    car_brand VARCHAR(50) NOT NULL DEFAULT '' COMMENT '车辆品牌',
+    car_model VARCHAR(50) NOT NULL DEFAULT '' COMMENT '车辆型号',
+    car_color VARCHAR(20) NOT NULL DEFAULT '' COMMENT '车辆颜色',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id),

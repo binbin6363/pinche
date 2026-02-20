@@ -27,6 +27,13 @@ func (s *MessageService) SendMessage(senderID uint64, req *model.MessageSendReq)
 		return nil, errors.New("文本消息内容不能超过2000字符")
 	}
 
+	// validate voice message duration
+	if req.MsgType == model.MsgTypeVoice {
+		if req.Duration <= 0 || req.Duration > 60 {
+			return nil, errors.New("语音消息时长必须在1-60秒之间")
+		}
+	}
+
 	// get receiver by open_id
 	receiver, err := s.userRepo.GetByOpenID(req.ReceiverID)
 	if err != nil {
@@ -54,6 +61,7 @@ func (s *MessageService) SendMessage(senderID uint64, req *model.MessageSendReq)
 		ReceiverOpenID: receiver.OpenID,
 		Content:        req.Content,
 		MsgType:        req.MsgType,
+		Duration:       req.Duration,
 		IsRead:         0,
 		CreatedAt:      time.Now(),
 	}

@@ -81,6 +81,10 @@ type TripListReq struct {
 	// for relevance filtering
 	UserCity     string `form:"user_city"`
 	UserProvince string `form:"user_province"`
+	// exclude current user's trips (open_id from frontend)
+	ExcludeUserOpenID string `form:"exclude_user_id"`
+	// internal user_id (set by handler after lookup)
+	ExcludeUserID uint64 `form:"-"`
 }
 
 type TripListResp struct {

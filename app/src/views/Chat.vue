@@ -75,10 +75,12 @@
 
             <!-- 消息内容 -->
             <div
-              class="max-w-[70%] px-3 py-2 rounded-2xl"
-              :class="msg.sender_id === currentUserOpenId
-                ? 'bg-primary-500 text-white rounded-br-sm'
-                : appStore.theme === 'dark' ? 'bg-gray-700 text-gray-200 rounded-bl-sm' : 'bg-white text-gray-800 rounded-bl-sm shadow-sm'"
+              class="max-w-[70%]"
+              :class="(msg.msg_type === 1 || msg.msg_type === 3)
+                ? (msg.sender_id === currentUserOpenId
+                  ? 'px-3 py-2 rounded-2xl bg-primary-500 text-white rounded-br-sm'
+                  : appStore.theme === 'dark' ? 'px-3 py-2 rounded-2xl bg-gray-700 text-gray-200 rounded-bl-sm' : 'px-3 py-2 rounded-2xl bg-white text-gray-800 rounded-bl-sm shadow-sm')
+                : ''"
             >
               <!-- 文字消息 -->
               <p v-if="msg.msg_type === 1" class="text-sm whitespace-pre-wrap break-words">
@@ -90,16 +92,39 @@
                 :src="imageUrlCache.get(msg.content) || ''"
                 @click="previewImage(msg.content)"
                 @load="onImageLoad"
-                class="max-w-full rounded-lg cursor-pointer"
+                class="max-w-full rounded-xl cursor-pointer"
                 style="max-height: 200px"
                 :data-key="msg.content"
               />
               <div
                 v-if="msg.msg_type === 2 && !imageUrlCache.get(msg.content)"
-                class="w-32 h-32 rounded-lg flex items-center justify-center"
+                class="w-32 h-32 rounded-xl flex items-center justify-center"
                 :class="appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'"
               >
                 <span class="text-xs text-gray-400">加载中...</span>
+              </div>
+              <!-- 语音消息 -->
+              <div
+                v-else-if="msg.msg_type === 3"
+                @click="playVoice(msg)"
+                class="flex items-center gap-2 cursor-pointer min-w-20"
+              >
+                <svg 
+                  class="w-5 h-5 flex-shrink-0" 
+                  :class="[
+                    playingVoiceId === msg.id ? 'animate-pulse' : '',
+                    msg.sender_id === currentUserOpenId ? 'text-white' : ''
+                  ]"
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+                <span class="text-sm">{{ msg.duration || 0 }}"</span>
+              </div>
+              <!-- 表情消息 -->
+              <div v-else-if="msg.msg_type === 4" class="text-4xl">
+                {{ msg.content }}
               </div>
             </div>
           </div>
@@ -110,6 +135,20 @@
     <!-- 底部输入区域 - 固定 -->
     <div class="chat-input border-t safe-area-bottom" :class="appStore.theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'">
       <div class="flex items-end gap-2 px-4 py-3">
+        <!-- 语音按钮 -->
+        <button
+          @click="toggleVoiceMode"
+          class="p-2 transition-colors flex-shrink-0"
+          :class="[
+            voiceMode ? 'text-primary-500' : '',
+            appStore.theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
+
         <!-- 图片选择 -->
         <button
           @click="selectImage"
@@ -128,9 +167,27 @@
           @change="handleImageSelected"
         />
 
-        <!-- 文字输入 -->
+        <!-- 文字输入 / 语音录制 -->
         <div class="flex-1 relative">
+          <!-- 语音录制模式 -->
+          <div
+            v-if="voiceMode"
+            @touchstart.prevent="startRecording"
+            @touchend.prevent="stopRecording"
+            @mousedown.prevent="startRecording"
+            @mouseup.prevent="stopRecording"
+            @mouseleave="cancelRecording"
+            class="w-full px-4 py-2 text-sm border rounded-2xl text-center select-none transition-colors cursor-pointer"
+            :class="[
+              recording ? 'bg-primary-100 border-primary-400 text-primary-600' : '',
+              appStore.theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-300' : 'border-gray-200 text-gray-600'
+            ]"
+          >
+            {{ recording ? `录音中... ${recordingDuration}s` : '按住说话' }}
+          </div>
+          <!-- 文字输入模式 -->
           <textarea
+            v-else
             v-model="inputText"
             ref="textInputRef"
             rows="1"
@@ -143,8 +200,23 @@
           ></textarea>
         </div>
 
+        <!-- 表情按钮 -->
+        <button
+          @click="toggleEmojiPicker"
+          class="p-2 transition-colors flex-shrink-0"
+          :class="[
+            showEmojiPicker ? 'text-primary-500' : '',
+            appStore.theme === 'dark' ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+          ]"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+
         <!-- 发送按钮 -->
         <button
+          v-if="!voiceMode"
           @click="sendMessage"
           :disabled="!inputText.trim() || sending"
           class="p-2 bg-primary-500 text-white rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-shrink-0"
@@ -153,6 +225,21 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
         </button>
+      </div>
+
+      <!-- 表情选择器 -->
+      <div v-if="showEmojiPicker" class="emoji-picker border-t" :class="appStore.theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'">
+        <div class="grid grid-cols-8 gap-2 p-3 max-h-48 overflow-y-auto">
+          <button
+            v-for="emoji in emojiList"
+            :key="emoji"
+            @click="sendEmoji(emoji)"
+            class="w-10 h-10 text-2xl flex items-center justify-center rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            :class="appStore.theme === 'dark' ? 'hover:bg-gray-700 active:bg-gray-600' : ''"
+          >
+            {{ emoji }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -203,6 +290,36 @@ const total = ref(0)
 const hasMore = ref(false)
 const previewImageUrl = ref('')
 
+// voice recording
+const voiceMode = ref(false)
+const recording = ref(false)
+const recordingDuration = ref(0)
+let mediaRecorder = null
+let audioChunks = []
+let recordingTimer = null
+let recordingStartTime = 0
+
+// voice playback
+const playingVoiceId = ref(null)
+let currentAudio = null
+
+// emoji picker
+const showEmojiPicker = ref(false)
+const emojiList = [
+  '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+  '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘',
+  '😗', '😙', '😚', '😋', '😛', '😜', '🤪', '😝',
+  '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐',
+  '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌',
+  '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢',
+  '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠',
+  '🥳', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️',
+  '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨',
+  '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞',
+  '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬',
+  '👍', '👎', '👏', '🙌', '👋', '🤝', '💪', '❤️'
+]
+
 // use open_id for comparison
 const currentUserOpenId = computed(() => userStore.user?.open_id || '')
 const myInitial = computed(() => userStore.user?.nickname?.charAt(0) || 'U')
@@ -234,15 +351,24 @@ onUnmounted(() => {
 function handleNewMessage(msg) {
   // only add if it's from current conversation
   // msg.sender_id and msg.receiver_id are open_ids from backend
-  if (msg.sender_id === peerOpenId.value || msg.receiver_id === peerOpenId.value) {
+  // case 1: peer sends to me -> sender_id = peer, receiver_id = me
+  // case 2: I send to peer (won't receive via websocket, already added via API)
+  const isFromPeer = msg.sender_id === peerOpenId.value && msg.receiver_id === currentUserOpenId.value
+  const isToPeer = msg.sender_id === currentUserOpenId.value && msg.receiver_id === peerOpenId.value
+  
+  if (isFromPeer || isToPeer) {
+    // avoid duplicate: check if message already exists
+    const exists = messages.value.some(m => m.id === msg.id)
+    if (exists) return
+    
     messages.value.unshift(msg)
-    // load image URL if it's an image message
-    if (msg.msg_type === 2) {
-      loadImageUrls([msg])
+    // load image/voice URL if needed
+    if (msg.msg_type === 2 || msg.msg_type === 3) {
+      loadMediaUrls([msg])
     }
     nextTick(() => scrollToBottom())
-    // mark as read immediately
-    if (msg.sender_id === peerOpenId.value) {
+    // mark as read immediately if from peer
+    if (isFromPeer) {
       messageStore.markAsRead(peerOpenId.value)
     }
   }
@@ -255,8 +381,8 @@ async function fetchMessages() {
     messages.value = data.list || []
     total.value = data.total
     hasMore.value = messages.value.length < total.value
-    // load image URLs for image messages
-    await loadImageUrls(messages.value)
+    // load media URLs for image/voice messages
+    await loadMediaUrls(messages.value)
   } finally {
     loading.value = false
   }
@@ -271,8 +397,8 @@ async function loadMoreMessages() {
     const newMessages = data.list || []
     messages.value = [...messages.value, ...newMessages]
     hasMore.value = messages.value.length < data.total
-    // load image URLs for new image messages
-    await loadImageUrls(newMessages)
+    // load media URLs for new messages
+    await loadMediaUrls(newMessages)
   } finally {
     loadingMore.value = false
   }
@@ -388,14 +514,14 @@ function previewImage(key) {
 }
 
 // load signed URLs for image messages
-async function loadImageUrls(msgList) {
-  const imageMessages = msgList.filter(m => m.msg_type === 2 && !imageUrlCache.value.has(m.content))
-  for (const msg of imageMessages) {
+async function loadMediaUrls(msgList) {
+  const mediaMessages = msgList.filter(m => (m.msg_type === 2 || m.msg_type === 3) && !imageUrlCache.value.has(m.content))
+  for (const msg of mediaMessages) {
     try {
       const url = await getResourceUrl(msg.content)
       imageUrlCache.value.set(msg.content, url)
     } catch (err) {
-      console.error('Failed to load image URL:', err)
+      console.error('Failed to load media URL:', err)
     }
   }
 }
@@ -407,6 +533,160 @@ function onImageLoad() {
 
 function goBack() {
   router.back()
+}
+
+// Voice recording functions
+function toggleVoiceMode() {
+  voiceMode.value = !voiceMode.value
+  showEmojiPicker.value = false
+}
+
+async function startRecording() {
+  if (recording.value) return
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    mediaRecorder = new MediaRecorder(stream)
+    audioChunks = []
+    
+    mediaRecorder.ondataavailable = (e) => {
+      audioChunks.push(e.data)
+    }
+    
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(track => track.stop())
+      
+      const duration = Math.round((Date.now() - recordingStartTime) / 1000)
+      if (duration < 1) {
+        appStore.showToast('录音时间太短', 'error')
+        return
+      }
+      
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+      await sendVoiceMessage(audioBlob, duration)
+    }
+    
+    mediaRecorder.start()
+    recording.value = true
+    recordingStartTime = Date.now()
+    recordingDuration.value = 0
+    
+    recordingTimer = setInterval(() => {
+      recordingDuration.value = Math.round((Date.now() - recordingStartTime) / 1000)
+      if (recordingDuration.value >= 60) {
+        stopRecording()
+      }
+    }, 100)
+  } catch (err) {
+    appStore.showToast('无法访问麦克风', 'error')
+  }
+}
+
+function stopRecording() {
+  if (!recording.value || !mediaRecorder) return
+  
+  clearInterval(recordingTimer)
+  recording.value = false
+  
+  if (mediaRecorder.state === 'recording') {
+    mediaRecorder.stop()
+  }
+}
+
+function cancelRecording() {
+  if (!recording.value) return
+  
+  clearInterval(recordingTimer)
+  recording.value = false
+  
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop()
+    audioChunks = []
+  }
+}
+
+async function sendVoiceMessage(audioBlob, duration) {
+  sending.value = true
+  try {
+    // upload voice file
+    const file = new File([audioBlob], 'voice.webm', { type: 'audio/webm' })
+    const voiceKey = await uploadImage(file, 'voices')
+    // send voice message
+    const msg = await messageStore.sendVoiceMessage(peerOpenId.value, voiceKey, duration)
+    // get signed URL for playback
+    const signedUrl = await getResourceUrl(voiceKey)
+    imageUrlCache.value.set(voiceKey, signedUrl)
+    messages.value.unshift(msg)
+    nextTick(() => scrollToBottom())
+  } catch (err) {
+    appStore.showToast(err.message || '语音发送失败', 'error')
+  } finally {
+    sending.value = false
+  }
+}
+
+// Voice playback
+async function playVoice(msg) {
+  const url = imageUrlCache.value.get(msg.content)
+  if (!url) {
+    try {
+      const signedUrl = await getResourceUrl(msg.content)
+      imageUrlCache.value.set(msg.content, signedUrl)
+      playVoiceUrl(msg.id, signedUrl)
+    } catch (err) {
+      appStore.showToast('语音加载失败', 'error')
+    }
+    return
+  }
+  playVoiceUrl(msg.id, url)
+}
+
+function playVoiceUrl(msgId, url) {
+  // stop current playing
+  if (currentAudio) {
+    currentAudio.pause()
+    currentAudio = null
+    if (playingVoiceId.value === msgId) {
+      playingVoiceId.value = null
+      return
+    }
+  }
+  
+  currentAudio = new Audio(url)
+  playingVoiceId.value = msgId
+  
+  currentAudio.onended = () => {
+    playingVoiceId.value = null
+    currentAudio = null
+  }
+  
+  currentAudio.onerror = () => {
+    playingVoiceId.value = null
+    currentAudio = null
+    appStore.showToast('语音播放失败', 'error')
+  }
+  
+  currentAudio.play()
+}
+
+// Emoji functions
+function toggleEmojiPicker() {
+  showEmojiPicker.value = !showEmojiPicker.value
+  voiceMode.value = false
+}
+
+async function sendEmoji(emoji) {
+  sending.value = true
+  try {
+    const msg = await messageStore.sendEmojiMessage(peerOpenId.value, emoji)
+    messages.value.unshift(msg)
+    showEmojiPicker.value = false
+    nextTick(() => scrollToBottom())
+  } catch (err) {
+    appStore.showToast(err.message || '表情发送失败', 'error')
+  } finally {
+    sending.value = false
+  }
 }
 </script>
 
@@ -443,5 +723,20 @@ function goBack() {
   flex-shrink: 0;
   position: relative;
   z-index: 10;
+}
+
+.emoji-picker {
+  animation: slideUp .2s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

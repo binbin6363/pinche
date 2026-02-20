@@ -398,11 +398,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onActivated } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 
 const userStore = useUserStore()
+
+// refresh user profile when page is activated (from keep-alive cache)
+onActivated(async () => {
+  if (userStore.isLoggedIn) {
+    await userStore.fetchProfile()
+  }
+})
 const appStore = useAppStore()
 
 const helpModal = ref(null)

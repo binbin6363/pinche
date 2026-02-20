@@ -88,6 +88,12 @@ func (r *TripRepository) List(req *model.TripListReq) ([]*model.Trip, int64, err
 	conditions = append(conditions, "t.status = ?")
 	args = append(args, model.TripStatusPending)
 
+	// exclude current user's trips by open_id
+	if req.ExcludeUserOpenID != "" {
+		conditions = append(conditions, "u.open_id != ?")
+		args = append(args, req.ExcludeUserOpenID)
+	}
+
 	if req.TripType > 0 {
 		conditions = append(conditions, "t.trip_type = ?")
 		args = append(args, req.TripType)
@@ -127,8 +133,8 @@ func (r *TripRepository) List(req *model.TripListReq) ([]*model.Trip, int64, err
 
 	whereClause := strings.Join(conditions, " AND ")
 
-	// count
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM trips t WHERE %s", whereClause)
+	// count (need to join users table for open_id filter)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM trips t LEFT JOIN users u ON t.user_id = u.id WHERE %s", whereClause)
 	var total int64
 	if err := database.DB.QueryRow(countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, err

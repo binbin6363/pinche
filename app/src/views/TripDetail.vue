@@ -146,7 +146,7 @@
           <!-- 价格 -->
           <div class="flex-shrink-0">
             <div v-if="trip.price > 0" class="text-xl font-bold text-gray-900">
-              {{ trip.price }}<span class="text-sm font-normal text-gray-500">元</span>
+              {{ trip.price }}<span class="text-sm font-normal text-gray-500">元/人</span>
             </div>
             <div v-else class="text-sm text-gray-500">价格面议</div>
           </div>

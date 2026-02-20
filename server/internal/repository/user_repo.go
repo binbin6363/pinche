@@ -42,11 +42,20 @@ func (r *UserRepository) Create(user *model.User) error {
 }
 
 func (r *UserRepository) GetByID(id uint64) (*model.User, error) {
-	query := `SELECT id, open_id, phone, password, nickname, avatar, gender, COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''), created_at, updated_at FROM users WHERE id = ?`
+	query := `SELECT id, open_id, phone, password, nickname, avatar, gender, 
+		COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''),
+		COALESCE(contact_phone, ''), COALESCE(contact_wechat, ''),
+		COALESCE(emergency_contact_name, ''), COALESCE(emergency_contact_phone, ''), COALESCE(emergency_contact_relation, ''),
+		COALESCE(car_number, ''), COALESCE(car_brand, ''), COALESCE(car_model, ''), COALESCE(car_color, ''),
+		created_at, updated_at FROM users WHERE id = ?`
 	user := &model.User{}
 	err := database.DB.QueryRow(query, id).Scan(
 		&user.ID, &user.OpenID, &user.Phone, &user.Password, &user.Nickname,
-		&user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province, &user.CreatedAt, &user.UpdatedAt,
+		&user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province,
+		&user.ContactPhone, &user.ContactWechat,
+		&user.EmergencyContactName, &user.EmergencyContactPhone, &user.EmergencyContactRelation,
+		&user.CarNumber, &user.CarBrand, &user.CarModel, &user.CarColor,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -58,11 +67,20 @@ func (r *UserRepository) GetByID(id uint64) (*model.User, error) {
 }
 
 func (r *UserRepository) GetByOpenID(openID string) (*model.User, error) {
-	query := `SELECT id, open_id, phone, password, nickname, avatar, gender, COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''), created_at, updated_at FROM users WHERE open_id = ?`
+	query := `SELECT id, open_id, phone, password, nickname, avatar, gender, 
+		COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''),
+		COALESCE(contact_phone, ''), COALESCE(contact_wechat, ''),
+		COALESCE(emergency_contact_name, ''), COALESCE(emergency_contact_phone, ''), COALESCE(emergency_contact_relation, ''),
+		COALESCE(car_number, ''), COALESCE(car_brand, ''), COALESCE(car_model, ''), COALESCE(car_color, ''),
+		created_at, updated_at FROM users WHERE open_id = ?`
 	user := &model.User{}
 	err := database.DB.QueryRow(query, openID).Scan(
 		&user.ID, &user.OpenID, &user.Phone, &user.Password, &user.Nickname,
-		&user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province, &user.CreatedAt, &user.UpdatedAt,
+		&user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province,
+		&user.ContactPhone, &user.ContactWechat,
+		&user.EmergencyContactName, &user.EmergencyContactPhone, &user.EmergencyContactRelation,
+		&user.CarNumber, &user.CarBrand, &user.CarModel, &user.CarColor,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -74,11 +92,20 @@ func (r *UserRepository) GetByOpenID(openID string) (*model.User, error) {
 }
 
 func (r *UserRepository) GetByPhone(phone string) (*model.User, error) {
-	query := `SELECT id, open_id, phone, password, nickname, avatar, gender, COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''), created_at, updated_at FROM users WHERE phone = ?`
+	query := `SELECT id, open_id, phone, password, nickname, avatar, gender, 
+		COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''),
+		COALESCE(contact_phone, ''), COALESCE(contact_wechat, ''),
+		COALESCE(emergency_contact_name, ''), COALESCE(emergency_contact_phone, ''), COALESCE(emergency_contact_relation, ''),
+		COALESCE(car_number, ''), COALESCE(car_brand, ''), COALESCE(car_model, ''), COALESCE(car_color, ''),
+		created_at, updated_at FROM users WHERE phone = ?`
 	user := &model.User{}
 	err := database.DB.QueryRow(query, phone).Scan(
 		&user.ID, &user.OpenID, &user.Phone, &user.Password, &user.Nickname,
-		&user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province, &user.CreatedAt, &user.UpdatedAt,
+		&user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province,
+		&user.ContactPhone, &user.ContactWechat,
+		&user.EmergencyContactName, &user.EmergencyContactPhone, &user.EmergencyContactRelation,
+		&user.CarNumber, &user.CarBrand, &user.CarModel, &user.CarColor,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -90,8 +117,16 @@ func (r *UserRepository) GetByPhone(phone string) (*model.User, error) {
 }
 
 func (r *UserRepository) Update(user *model.User) error {
-	query := `UPDATE users SET nickname = ?, avatar = ?, gender = ?, city = ?, province = ? WHERE id = ?`
-	_, err := database.DB.Exec(query, user.Nickname, user.Avatar, user.Gender, user.City, user.Province, user.ID)
+	query := `UPDATE users SET nickname = ?, avatar = ?, gender = ?, city = ?, province = ?,
+		contact_phone = ?, contact_wechat = ?,
+		emergency_contact_name = ?, emergency_contact_phone = ?, emergency_contact_relation = ?,
+		car_number = ?, car_brand = ?, car_model = ?, car_color = ?
+		WHERE id = ?`
+	_, err := database.DB.Exec(query, user.Nickname, user.Avatar, user.Gender, user.City, user.Province,
+		user.ContactPhone, user.ContactWechat,
+		user.EmergencyContactName, user.EmergencyContactPhone, user.EmergencyContactRelation,
+		user.CarNumber, user.CarBrand, user.CarModel, user.CarColor,
+		user.ID)
 	return err
 }
 
@@ -143,7 +178,12 @@ func (r *UserRepository) ListAll(req *model.AdminUserListReq) ([]*model.User, in
 
 	// list
 	offset := (req.Page - 1) * req.PageSize
-	listQuery := fmt.Sprintf(`SELECT id, open_id, phone, password, nickname, avatar, gender, COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''), created_at, updated_at 
+	listQuery := fmt.Sprintf(`SELECT id, open_id, phone, password, nickname, avatar, gender, 
+		COALESCE(status, 0), COALESCE(city, ''), COALESCE(province, ''),
+		COALESCE(contact_phone, ''), COALESCE(contact_wechat, ''),
+		COALESCE(emergency_contact_name, ''), COALESCE(emergency_contact_phone, ''), COALESCE(emergency_contact_relation, ''),
+		COALESCE(car_number, ''), COALESCE(car_brand, ''), COALESCE(car_model, ''), COALESCE(car_color, ''),
+		created_at, updated_at 
 		FROM users %s ORDER BY created_at DESC LIMIT ? OFFSET ?`, whereClause)
 	args = append(args, req.PageSize, offset)
 
@@ -156,7 +196,11 @@ func (r *UserRepository) ListAll(req *model.AdminUserListReq) ([]*model.User, in
 	var users []*model.User
 	for rows.Next() {
 		user := &model.User{}
-		err := rows.Scan(&user.ID, &user.OpenID, &user.Phone, &user.Password, &user.Nickname, &user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province, &user.CreatedAt, &user.UpdatedAt)
+		err := rows.Scan(&user.ID, &user.OpenID, &user.Phone, &user.Password, &user.Nickname, &user.Avatar, &user.Gender, &user.Status, &user.City, &user.Province,
+			&user.ContactPhone, &user.ContactWechat,
+			&user.EmergencyContactName, &user.EmergencyContactPhone, &user.EmergencyContactRelation,
+			&user.CarNumber, &user.CarBrand, &user.CarModel, &user.CarColor,
+			&user.CreatedAt, &user.UpdatedAt)
 		if err != nil {
 			return nil, 0, err
 		}

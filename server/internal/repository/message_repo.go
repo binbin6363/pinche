@@ -14,8 +14,8 @@ func NewMessageRepository() *MessageRepository {
 
 // Create inserts a new message into the database
 func (r *MessageRepository) Create(msg *model.Message) error {
-	query := `INSERT INTO messages (sender_id, receiver_id, content, msg_type, is_read) VALUES (?, ?, ?, ?, ?)`
-	result, err := database.DB.Exec(query, msg.SenderID, msg.ReceiverID, msg.Content, msg.MsgType, msg.IsRead)
+	query := `INSERT INTO messages (sender_id, receiver_id, content, msg_type, duration, is_read) VALUES (?, ?, ?, ?, ?, ?)`
+	result, err := database.DB.Exec(query, msg.SenderID, msg.ReceiverID, msg.Content, msg.MsgType, msg.Duration, msg.IsRead)
 	if err != nil {
 		return err
 	}
@@ -29,10 +29,10 @@ func (r *MessageRepository) Create(msg *model.Message) error {
 
 // GetByID retrieves a message by its ID
 func (r *MessageRepository) GetByID(id uint64) (*model.Message, error) {
-	query := `SELECT id, sender_id, receiver_id, content, msg_type, is_read, created_at FROM messages WHERE id = ?`
+	query := `SELECT id, sender_id, receiver_id, content, msg_type, duration, is_read, created_at FROM messages WHERE id = ?`
 	msg := &model.Message{}
 	err := database.DB.QueryRow(query, id).Scan(
-		&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.MsgType, &msg.IsRead, &msg.CreatedAt,
+		&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.MsgType, &msg.Duration, &msg.IsRead, &msg.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -56,7 +56,7 @@ func (r *MessageRepository) GetConversationMessages(userID, peerID uint64, page,
 	// get messages with pagination, ordered by created_at desc
 	offset := (page - 1) * pageSize
 	query := `
-		SELECT m.id, m.sender_id, m.receiver_id, m.content, m.msg_type, m.is_read, m.created_at,
+		SELECT m.id, m.sender_id, m.receiver_id, m.content, m.msg_type, m.duration, m.is_read, m.created_at,
 		       s.open_id as sender_open_id, r.open_id as receiver_open_id
 		FROM messages m
 		LEFT JOIN users s ON s.id = m.sender_id
@@ -74,7 +74,7 @@ func (r *MessageRepository) GetConversationMessages(userID, peerID uint64, page,
 	var messages []*model.Message
 	for rows.Next() {
 		msg := &model.Message{}
-		err := rows.Scan(&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.MsgType, &msg.IsRead, &msg.CreatedAt,
+		err := rows.Scan(&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.MsgType, &msg.Duration, &msg.IsRead, &msg.CreatedAt,
 			&msg.SenderOpenID, &msg.ReceiverOpenID)
 		if err != nil {
 			return nil, 0, err
@@ -98,6 +98,9 @@ func (r *MessageRepository) GetConversations(userID uint64) ([]*model.Conversati
 			COALESCE((SELECT msg_type FROM messages m3 WHERE 
 				((m3.sender_id = ? AND m3.receiver_id = peer_id) OR (m3.sender_id = peer_id AND m3.receiver_id = ?))
 				ORDER BY m3.created_at DESC LIMIT 1), 1) as last_msg_type,
+			COALESCE((SELECT duration FROM messages m3b WHERE 
+				((m3b.sender_id = ? AND m3b.receiver_id = peer_id) OR (m3b.sender_id = peer_id AND m3b.receiver_id = ?))
+				ORDER BY m3b.created_at DESC LIMIT 1), 0) as last_duration,
 			(SELECT created_at FROM messages m4 WHERE 
 				((m4.sender_id = ? AND m4.receiver_id = peer_id) OR (m4.sender_id = peer_id AND m4.receiver_id = ?))
 				ORDER BY m4.created_at DESC LIMIT 1) as last_message_at,
@@ -113,7 +116,7 @@ func (r *MessageRepository) GetConversations(userID uint64) ([]*model.Conversati
 		ORDER BY last_message_at DESC
 	`
 	rows, err := database.DB.Query(query,
-		userID, userID, userID, userID, userID, userID, userID, userID, userID, userID)
+		userID, userID, userID, userID, userID, userID, userID, userID, userID, userID, userID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +133,7 @@ func (r *MessageRepository) GetConversations(userID uint64) ([]*model.Conversati
 			&conv.PeerOpenID,
 			&conv.LastMessage.Content,
 			&conv.LastMessage.MsgType,
+			&conv.LastMessage.Duration,
 			&lastMessageAt,
 			&conv.UnreadCount,
 		)

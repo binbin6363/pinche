@@ -129,7 +129,7 @@
             <!-- 右侧：价格 -->
             <div class="flex flex-col items-end flex-shrink-0">
               <div v-if="trip.price > 0" class="text-xl font-bold">
-                {{ trip.price }}<span class="text-sm font-normal text-gray-500">元</span>
+                {{ trip.price }}<span class="text-sm font-normal text-gray-500">元/人</span>
               </div>
               <div v-else class="text-sm text-gray-400">面议</div>
             </div>
@@ -231,6 +231,10 @@ async function fetchTrips() {
     }
     if (userStore.user?.province) {
       params.user_province = userStore.user.province
+    }
+    // exclude current user's trips
+    if (userStore.user?.open_id) {
+      params.exclude_user_id = userStore.user.open_id
     }
     const result = await tripStore.fetchTrips(params)
     trips.value = result.list || []

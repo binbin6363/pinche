@@ -13,6 +13,18 @@ type User struct {
 	Status    int8      `json:"status"`    // 0-normal 1-banned
 	City      string    `json:"city"`      // user's city for trip matching
 	Province  string    `json:"province"`  // user's province for trip matching
+	// contact info
+	ContactPhone  string `json:"contact_phone"`
+	ContactWechat string `json:"contact_wechat"`
+	// emergency contact
+	EmergencyContactName     string `json:"emergency_contact_name"`
+	EmergencyContactPhone    string `json:"emergency_contact_phone"`
+	EmergencyContactRelation string `json:"emergency_contact_relation"`
+	// car info
+	CarNumber string `json:"car_number"`
+	CarBrand  string `json:"car_brand"`
+	CarModel  string `json:"car_model"`
+	CarColor  string `json:"car_color"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -39,6 +51,18 @@ type UserUpdateReq struct {
 	Gender   *int8  `json:"gender" binding:"omitempty,min=0,max=2"`
 	City     string `json:"city"`
 	Province string `json:"province"`
+	// contact info
+	ContactPhone  string `json:"contact_phone"`
+	ContactWechat string `json:"contact_wechat"`
+	// emergency contact
+	EmergencyContactName     string `json:"emergency_contact_name"`
+	EmergencyContactPhone    string `json:"emergency_contact_phone"`
+	EmergencyContactRelation string `json:"emergency_contact_relation"`
+	// car info
+	CarNumber string `json:"car_number"`
+	CarBrand  string `json:"car_brand"`
+	CarModel  string `json:"car_model"`
+	CarColor  string `json:"car_color"`
 }
 
 type AdminUserListReq struct {

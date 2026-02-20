@@ -59,10 +59,14 @@ function handleWebSocketMessage(message) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   // set websocket message callback
   setOnMessageCallback(handleWebSocketMessage)
   // initialize WebSocket after app is mounted
   userStore.initWebSocket()
+  // fetch latest user profile on app start
+  if (userStore.isLoggedIn) {
+    await userStore.fetchProfile()
+  }
 })
 </script>

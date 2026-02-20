@@ -66,7 +66,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/utils/api'
 import { useAppStore } from '@/stores/app'
@@ -77,15 +77,31 @@ const appStore = useAppStore()
 const notifications = ref([])
 const loading = ref(true)
 
-onMounted(async () => {
+async function fetchNotifications() {
   try {
     const result = await api.get('/notifications')
     notifications.value = result.list || []
     appStore.setUnreadCount(result.unread || 0)
-  } finally {
-    loading.value = false
+  } catch (e) {
+    // ignore
   }
+}
+
+onMounted(async () => {
+  await fetchNotifications()
+  loading.value = false
 })
+
+// watch appStore.notifications for new websocket notifications
+// when a new notification is added via websocket, refresh the list
+watch(
+  () => appStore.notifications.length,
+  (newLen, oldLen) => {
+    if (newLen > oldLen) {
+      fetchNotifications()
+    }
+  }
+)
 
 function goBack() {
   router.back()
@@ -117,9 +133,11 @@ async function handleNotificationClick(notification) {
     }
   }
   
-  // 跳转到匹配详情
-  if (notification.match_id) {
+  // 跳转：优先 match_id，其次 trip_id（抢单通知）
+  if (notification.match_id && notification.match_id > 0) {
     router.push(`/match/${notification.match_id}`)
+  } else if (notification.trip_id && notification.trip_id > 0) {
+    router.push(`/my-trip/${notification.trip_id}`)
   }
 }
 

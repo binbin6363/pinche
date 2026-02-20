@@ -42,6 +42,27 @@ export const useMessageStore = defineStore('message', () => {
     return msg
   }
 
+  // send a voice message (receiverOpenId is the open_id string)
+  async function sendVoiceMessage(receiverOpenId, voiceKey, duration) {
+    const msg = await api.post('/messages', {
+      receiver_id: receiverOpenId,
+      content: voiceKey,
+      msg_type: 3,
+      duration: duration
+    })
+    return msg
+  }
+
+  // send an emoji message (receiverOpenId is the open_id string)
+  async function sendEmojiMessage(receiverOpenId, emojiCode) {
+    const msg = await api.post('/messages', {
+      receiver_id: receiverOpenId,
+      content: emojiCode,
+      msg_type: 4
+    })
+    return msg
+  }
+
   // mark messages from a peer as read (peerOpenId is the open_id string)
   async function markAsRead(peerOpenId) {
     await api.put('/messages/read', null, {
@@ -74,6 +95,8 @@ export const useMessageStore = defineStore('message', () => {
     fetchMessages,
     sendTextMessage,
     sendImageMessage,
+    sendVoiceMessage,
+    sendEmojiMessage,
     markAsRead,
     fetchUnreadCount,
     addMessage,

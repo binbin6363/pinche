@@ -46,16 +46,25 @@ func (h *WebSocketHandler) HandleConnection(c *gin.Context) {
 		return
 	}
 
+	// Get user's open_id for call signaling
+	user, err := h.userService.GetByID(userID)
+	if err != nil {
+		logger.Error("WebSocket connection failed: user not found", "user_id", userID, "error", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+		return
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		logger.Error("WebSocket upgrade failed", "user_id", userID, "error", err)
 		return
 	}
 
-	logger.Info("WebSocket connection established", "user_id", userID, "client_ip", c.ClientIP())
+	logger.Info("WebSocket connection established", "user_id", userID, "open_id", user.OpenID, "client_ip", c.ClientIP())
 
 	client := &ws.Client{
 		UserID: userID,
+		OpenID: user.OpenID,
 		Conn:   conn,
 		Send:   make(chan []byte, 256),
 	}

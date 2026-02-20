@@ -146,6 +146,12 @@
               >
                 {{ trip.trip_type === 1 ? '车找人' : '人找车' }}
               </span>
+              <span
+                v-if="trip.status === 3"
+                class="badge status-completed"
+              >
+                已成行
+              </span>
               <span class="text-xs text-gray-400">{{ formatTripDate(trip.departure_time) }}</span>
             </div>
             <div class="text-lg font-bold" :style="{ color: 'var(--theme-primary)' }">

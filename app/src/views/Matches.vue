@@ -47,7 +47,6 @@
       <div
         v-for="(conv, index) in filteredConversations"
         :key="conv.peer_id"
-        @click="goChat(conv)"
         class="flex items-center px-4 py-3 transition-colors cursor-pointer"
         :class="[
           appStore.theme === 'dark' ? 'active:bg-gray-700' : 'active:bg-gray-100',
@@ -55,7 +54,7 @@
         ]"
       >
         <!-- 头像 -->
-        <div class="relative flex-shrink-0 mr-3">
+        <div class="relative flex-shrink-0 mr-3" @click="goUserProfile(conv)">
           <!-- 系统通知特殊图标 -->
           <div
             v-if="conv.is_system"
@@ -84,7 +83,7 @@
         </div>
 
         <!-- 内容区域 -->
-        <div class="flex-1 min-w-0">
+        <div class="flex-1 min-w-0" @click="goChat(conv)">
           <div class="flex items-center justify-between">
             <span class="font-medium truncate text-[15px]" :class="appStore.theme === 'dark' ? 'text-white' : 'text-gray-900'">
               {{ conv.is_system ? '系统通知' : (conv.peer_nickname || '用户') }}
@@ -94,6 +93,10 @@
           <div class="flex items-center mt-1">
             <!-- 消息前缀 -->
             <span v-if="conv.last_message_type === 2" class="text-[13px] text-gray-400">[图片]</span>
+            <span v-else-if="conv.last_message_type === 3" class="text-[13px] text-gray-400">[语音]</span>
+            <span v-else-if="conv.last_message_type === 4" class="text-[13px] text-gray-400">[表情]</span>
+            <span v-else-if="conv.last_message_type === 5" class="text-[13px] text-gray-400">[通话]</span>
+            <span v-else-if="conv.last_message_type === 6" class="text-[13px] text-gray-400">[视频]</span>
             <span v-else class="text-[13px] text-gray-500 truncate">{{ conv.last_message_content || '暂无消息' }}</span>
           </div>
         </div>
@@ -103,10 +106,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessageStore } from '@/stores/message'
 import { useAppStore } from '@/stores/app'
+import { addMessageListener, removeMessageListener } from '@/utils/websocket'
 
 const router = useRouter()
 const messageStore = useMessageStore()
@@ -189,7 +193,41 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  
+  // listen for new messages to update conversation list
+  addMessageListener(handleNewMessage)
 })
+
+onUnmounted(() => {
+  removeMessageListener(handleNewMessage)
+})
+
+// handle new message from websocket
+function handleNewMessage(msg) {
+  // find the conversation with this peer
+  const peerId = msg.sender_id
+  const convIndex = conversations.value.findIndex(c => c.peer_id === peerId)
+  
+  if (convIndex >= 0) {
+    // update existing conversation
+    const conv = conversations.value[convIndex]
+    conv.last_message = {
+      content: msg.content,
+      msg_type: msg.msg_type
+    }
+    conv.last_message_at = msg.created_at
+    conv.unread_count = (conv.unread_count || 0) + 1
+    
+    // move to top by removing and re-adding
+    conversations.value.splice(convIndex, 1)
+    conversations.value.unshift(conv)
+  } else {
+    // new conversation - refetch the list
+    messageStore.fetchConversations().then(result => {
+      conversations.value = result.list || []
+    })
+  }
+}
 
 async function fetchSystemNotifications() {
   try {
@@ -217,6 +255,14 @@ function goChat(conv) {
         avatar: conv.peer_avatar
       }
     })
+  }
+}
+
+function goUserProfile(conv) {
+  if (!conv.is_system && conv.peer_id) {
+    router.push(`/user/${conv.peer_id}`)
+  } else if (conv.is_system) {
+    router.push('/notifications')
   }
 }
 

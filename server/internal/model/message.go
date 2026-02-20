@@ -25,14 +25,32 @@ const (
 	MsgTypeImage int8 = 2
 	MsgTypeVoice int8 = 3 // voice message, content is COS key, duration in extra field
 	MsgTypeEmoji int8 = 4 // emoji message, content is emoji code
+	MsgTypeCall  int8 = 5 // call record, content is JSON with call info
+	MsgTypeVideo int8 = 6 // video message, content is JSON with video info
 )
+
+// CallRecord represents the call record data stored in message content
+type CallRecord struct {
+	CallType string `json:"call_type"` // "audio" or "video"
+	Duration int    `json:"duration"`  // call duration in seconds
+	Status   string `json:"status"`    // "completed", "missed", "rejected", "cancelled"
+}
+
+// VideoContent represents the video message data stored in message content
+type VideoContent struct {
+	Key       string `json:"key"`       // video file COS key
+	Thumbnail string `json:"thumbnail"` // thumbnail image COS key
+	Duration  int    `json:"duration"`  // video duration in seconds
+	Width     int    `json:"width"`     // video width in pixels
+	Height    int    `json:"height"`    // video height in pixels
+}
 
 // MessageSendReq is the request body for sending a message
 type MessageSendReq struct {
-	ReceiverID string `json:"receiver_id" binding:"required"`          // open_id
-	Content    string `json:"content" binding:"required"`              // text max 2000, image/voice is COS key, emoji is emoji code
-	MsgType    int8   `json:"msg_type" binding:"required,oneof=1 2 3 4"`
-	Duration   int    `json:"duration"`                                // voice duration in seconds (for voice messages)
+	ReceiverID string `json:"receiver_id" binding:"required"`              // open_id
+	Content    string `json:"content" binding:"required"`                  // text max 2000, image/voice is COS key, emoji is emoji code
+	MsgType    int8   `json:"msg_type" binding:"required,oneof=1 2 3 4 5 6"`
+	Duration   int    `json:"duration"`                                    // voice/video duration in seconds
 }
 
 // MessageListReq is the request params for listing messages

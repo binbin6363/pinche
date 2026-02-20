@@ -50,17 +50,17 @@ api.interceptors.response.use(
   }
 )
 
-// upload image file
-// bizType: 'images' for chat images, 'avatar' for user avatar
-// for images: returns object key (e.g., "images/xxx.jpg")
-// for avatar: returns public URL directly
-export async function uploadImage(file, bizType = 'images') {
+// upload file (unified upload API)
+// bizType: 'images' for chat images, 'avatar' for user avatar, 'trip' for trip images, 'voices' for voice messages
+// for images/voices: returns object key (e.g., "images/xxx.jpg", "voices/xxx.webm")
+// for avatar/trip: returns public URL directly
+export async function uploadFile(file, bizType = 'images') {
   const formData = new FormData()
   formData.append('file', file)
 
   const userStore = useUserStore()
   try {
-    const response = await axios.post(`/api/upload/image?biz_type=${bizType}`, formData, {
+    const response = await axios.post(`/api/upload?biz_type=${bizType}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
         'Authorization': `Bearer ${userStore.token}`
@@ -71,7 +71,7 @@ export async function uploadImage(file, bizType = 'images') {
     if (response.data.code !== 0) {
       throw new Error(response.data.message)
     }
-    // for avatar and trip: return url; for images: return key
+    // for avatar and trip: return url; for images/voices: return key
     if (bizType === 'avatar' || bizType === 'trip') {
       return response.data.data.url
     }
@@ -80,6 +80,26 @@ export async function uploadImage(file, bizType = 'images') {
     const msg = error.response?.data?.message || error.message || '上传失败'
     throw new Error(msg)
   }
+}
+
+// upload image file (alias for uploadFile with image types)
+export async function uploadImage(file, bizType = 'images') {
+  return uploadFile(file, bizType)
+}
+
+// upload voice file (alias for uploadFile with voices type)
+export async function uploadVoice(file) {
+  return uploadFile(file, 'voices')
+}
+
+// upload video file
+export async function uploadVideo(file) {
+  return uploadFile(file, 'videos')
+}
+
+// upload thumbnail image
+export async function uploadThumbnail(file) {
+  return uploadFile(file, 'thumbs')
 }
 
 // get signed URL for resource

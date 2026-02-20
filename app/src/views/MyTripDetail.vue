@@ -189,7 +189,7 @@
                 <div class="text-xs text-gray-400">{{ formatShortTime(grab.created_at) }}</div>
               </div>
               <button
-                @click="goToChat(grab.user?.open_id)"
+                @click="goToChat(grab)"
                 class="btn btn-outline px-4 py-2 text-sm"
               >
                 联系TA
@@ -474,9 +474,15 @@ function goBack() {
   router.back()
 }
 
-function goToChat(peerId) {
-  if (!peerId) return
-  router.push(`/chat/${peerId}`)
+function goToChat(grab) {
+  if (!grab?.user?.open_id) return
+  router.push({
+    path: `/chat/${grab.user.open_id}`,
+    query: {
+      nickname: grab.user.nickname || '用户',
+      avatar: grab.user.avatar || ''
+    }
+  })
 }
 
 function getStatusClass(status) {

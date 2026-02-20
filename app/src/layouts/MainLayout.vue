@@ -42,25 +42,32 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           <span>消息</span>
-          <!-- 未读数 -->
+          <!-- 未读数（聊天消息 + 系统通知） -->
           <span
-            v-if="messageStore.unreadCount > 0"
+            v-if="totalMessageUnread > 0"
             class="absolute top-0 right-1/4 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[11px] font-medium rounded-full flex items-center justify-center"
           >
-            {{ messageStore.unreadCount > 99 ? '99+' : messageStore.unreadCount }}
+            {{ totalMessageUnread > 99 ? '99+' : totalMessageUnread }}
           </span>
         </router-link>
 
         <!-- 我的 -->
         <router-link
           to="/profile"
-          class="tab-item flex-1"
+          class="tab-item flex-1 relative"
           :class="{ active: isActive('/profile') }"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           <span>我的</span>
+          <!-- 好友申请未读数 -->
+          <span
+            v-if="friendStore.requestCount > 0"
+            class="absolute top-0 right-1/4 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[11px] font-medium rounded-full flex items-center justify-center"
+          >
+            {{ friendStore.requestCount > 99 ? '99+' : friendStore.requestCount }}
+          </span>
         </router-link>
       </div>
     </nav>
@@ -68,18 +75,30 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useAppStore } from '@/stores/app'
 import { useMessageStore } from '@/stores/message'
+import { useFriendStore } from '@/stores/friend'
 
 const route = useRoute()
 const userStore = useUserStore()
+const appStore = useAppStore()
 const messageStore = useMessageStore()
+const friendStore = useFriendStore()
+
+// total unread = chat messages + system notifications
+const totalMessageUnread = computed(() => {
+  return messageStore.unreadCount + appStore.unreadCount
+})
 
 onMounted(async () => {
   if (userStore.isLoggedIn) {
-    await messageStore.fetchUnreadCount()
+    await Promise.all([
+      messageStore.fetchUnreadCount(),
+      friendStore.fetchFriendCount()
+    ])
   }
 })
 

@@ -24,8 +24,8 @@ const (
 
 type Trip struct {
 	ID                  uint64    `json:"id"`
-	UserID              uint64    `json:"-"`         // internal ID
-	UserOpenID          string    `json:"user_id"`   // open_id for external
+	UserID              uint64    `json:"user_internal_id"` // internal ID, needed for cache
+	UserOpenID          string    `json:"user_id"`          // open_id for external
 	TripType            int8      `json:"trip_type"`
 	DepartureCity       string    `json:"departure_city"`
 	DepartureProvince   string    `json:"departure_province"`

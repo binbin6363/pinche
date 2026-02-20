@@ -93,6 +93,30 @@ const routes = [
     path: '/settings',
     name: 'Settings',
     component: () => import('@/views/Settings.vue')
+  },
+  {
+    path: '/user/:id',
+    name: 'UserProfile',
+    component: () => import('@/views/UserProfile.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/friends',
+    name: 'FriendList',
+    component: () => import('@/views/FriendList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/friends/requests',
+    name: 'FriendRequests',
+    component: () => import('@/views/FriendRequests.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/call',
+    name: 'VideoCall',
+    component: () => import('@/views/VideoCall.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

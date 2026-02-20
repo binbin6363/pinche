@@ -63,6 +63,41 @@ export const useMessageStore = defineStore('message', () => {
     return msg
   }
 
+  // send a call record message (receiverOpenId is the open_id string)
+  // callType: 'audio' | 'video', duration: seconds, status: 'completed' | 'missed' | 'rejected' | 'cancelled'
+  async function sendCallRecordMessage(receiverOpenId, callType, duration, status) {
+    const content = JSON.stringify({
+      call_type: callType,
+      duration: duration,
+      status: status
+    })
+    const msg = await api.post('/messages', {
+      receiver_id: receiverOpenId,
+      content: content,
+      msg_type: 5
+    })
+    return msg
+  }
+
+  // send a video message (receiverOpenId is the open_id string)
+  // videoInfo: { key, thumbnail, duration, width, height }
+  async function sendVideoMessage(receiverOpenId, videoInfo) {
+    const content = JSON.stringify({
+      key: videoInfo.key,
+      thumbnail: videoInfo.thumbnail,
+      duration: videoInfo.duration,
+      width: videoInfo.width || 0,
+      height: videoInfo.height || 0
+    })
+    const msg = await api.post('/messages', {
+      receiver_id: receiverOpenId,
+      content: content,
+      msg_type: 6,
+      duration: videoInfo.duration
+    })
+    return msg
+  }
+
   // mark messages from a peer as read (peerOpenId is the open_id string)
   async function markAsRead(peerOpenId) {
     await api.put('/messages/read', null, {
@@ -87,6 +122,11 @@ export const useMessageStore = defineStore('message', () => {
     currentMessages.value = []
   }
 
+  // increment unread count by 1
+  function incrementUnreadCount() {
+    unreadCount.value++
+  }
+
   return {
     conversations,
     currentMessages,
@@ -97,9 +137,12 @@ export const useMessageStore = defineStore('message', () => {
     sendImageMessage,
     sendVoiceMessage,
     sendEmojiMessage,
+    sendCallRecordMessage,
+    sendVideoMessage,
     markAsRead,
     fetchUnreadCount,
     addMessage,
-    clearCurrentMessages
+    clearCurrentMessages,
+    incrementUnreadCount
   }
 })

@@ -3,10 +3,11 @@ package handler
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"pinche/internal/middleware"
 	"pinche/internal/model"
 	"pinche/internal/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UploadHandler struct {
@@ -21,23 +22,25 @@ func NewUploadHandler(uploadService *service.UploadService, userService *service
 	}
 }
 
-// UploadImage handles POST /api/upload/image
-// Query param: biz_type - "images" for chat images, "avatar" for user avatar
-func (h *UploadHandler) UploadImage(c *gin.Context) {
+// Upload handles POST /api/upload
+// Query param: biz_type - "images" for chat images, "avatar" for user avatar, "trip" for trip images, "voices" for voice messages
+// Response:
+//   - for avatar/trip: returns { "url": "public_url" }
+//   - for images/voices: returns { "key": "object_key" }
+func (h *UploadHandler) Upload(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(model.ErrCodeBadRequest, "请选择文件"))
 		return
 	}
 
-	bizType := c.Query("biz_type")
-	uploadBizType := service.UploadBizType(bizType)
-	if uploadBizType == "" {
-		uploadBizType = service.BizTypeImage
+	bizType := service.UploadBizType(c.Query("biz_type"))
+	if !service.IsValidBizType(bizType) {
+		bizType = service.BizTypeImage
 	}
 
-	// for avatar, use UploadAvatar method with openID naming
-	if uploadBizType == service.BizTypeAvatar {
+	// avatar: use UploadAvatar method with openID naming
+	if bizType == service.BizTypeAvatar {
 		userID := middleware.GetUserID(c)
 		user, err := h.userService.GetByID(userID)
 		if err != nil || user == nil {
@@ -57,9 +60,9 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 		return
 	}
 
-	// for trip images, returns public URL
-	if uploadBizType == service.BizTypeTrip {
-		publicURL, err := h.service.UploadImage(file, uploadBizType)
+	// trip: returns public URL
+	if bizType == service.BizTypeTrip {
+		publicURL, err := h.service.Upload(file, bizType)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, model.Error(model.ErrCodeBadRequest, err.Error()))
 			return
@@ -71,8 +74,8 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 		return
 	}
 
-	// for chat images, use UploadImage method
-	objectKey, err := h.service.UploadImage(file, uploadBizType)
+	// images/voices: returns object key
+	objectKey, err := h.service.Upload(file, bizType)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.Error(model.ErrCodeBadRequest, err.Error()))
 		return
@@ -81,6 +84,11 @@ func (h *UploadHandler) UploadImage(c *gin.Context) {
 	c.JSON(http.StatusOK, model.Success(gin.H{
 		"key": objectKey,
 	}))
+}
+
+// UploadImage handles POST /api/upload/image (deprecated, use Upload instead)
+func (h *UploadHandler) UploadImage(c *gin.Context) {
+	h.Upload(c)
 }
 
 // GetSignedURL handles GET /api/resource/url

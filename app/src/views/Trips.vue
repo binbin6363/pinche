@@ -101,17 +101,25 @@
             ? 'bg-gray-900 border-gray-800 active:bg-gray-800' 
             : 'bg-white border-gray-100 active:bg-gray-50'"
         >
-          <!-- 顶部：时间 + 类型标签 -->
+          <!-- 顶部：时间 + 类型/状态标签 -->
           <div class="flex items-center justify-between mb-3">
             <div class="text-base font-semibold">
               {{ formatTripDate(trip.departure_time) }}
             </div>
-            <span
-              class="badge"
-              :class="trip.trip_type === 1 ? 'trip-type-driver' : 'trip-type-passenger'"
-            >
-              {{ trip.trip_type === 1 ? '车找人' : '人找车' }}
-            </span>
+            <div class="flex items-center gap-2">
+              <span
+                v-if="trip.status === 3"
+                class="badge status-completed"
+              >
+                已成行
+              </span>
+              <span
+                class="badge"
+                :class="trip.trip_type === 1 ? 'trip-type-driver' : 'trip-type-passenger'"
+              >
+                {{ trip.trip_type === 1 ? '车找人' : '人找车' }}
+              </span>
+            </div>
           </div>
 
           <!-- 中间：起点→终点 一行展示 -->

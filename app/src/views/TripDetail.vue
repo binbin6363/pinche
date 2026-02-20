@@ -175,46 +175,6 @@
       </div>
     </div>
 
-    <!-- 用户资料弹窗 -->
-    <div v-if="showUserModal && selectedUser" class="user-profile-modal" @click.self="showUserModal = false">
-      <div class="user-profile-modal-overlay" @click="showUserModal = false"></div>
-      <div class="user-profile-modal-content">
-        <div class="flex items-center gap-4 mb-4">
-          <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-            <img v-if="selectedUser.avatar" :src="selectedUser.avatar" class="w-full h-full object-cover" />
-            <span v-else class="text-xl font-bold text-gray-500">{{ selectedUser.nickname?.charAt(0) || '?' }}</span>
-          </div>
-          <div>
-            <div class="text-lg font-semibold text-gray-800">{{ selectedUser.nickname || '用户' }}</div>
-            <div class="text-sm text-gray-500">{{ selectedUser.gender === 1 ? '男' : selectedUser.gender === 2 ? '女' : '未设置' }}</div>
-          </div>
-        </div>
-        
-        <div class="space-y-3 text-sm">
-          <div v-if="selectedUser.location" class="flex items-center gap-2 text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>{{ selectedUser.location }}</span>
-          </div>
-          <div v-if="selectedUser.car_brand" class="flex items-center gap-2 text-gray-600">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <span>{{ selectedUser.car_brand }} {{ selectedUser.car_model || '' }}</span>
-          </div>
-        </div>
-        
-        <button 
-          @click="showUserModal = false" 
-          class="w-full mt-6 py-3 rounded-xl text-sm font-medium"
-          :class="appStore.theme === 'dark' ? 'bg-gray-600 text-gray-200' : 'bg-gray-100 text-gray-600'"
-        >
-          关闭
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -235,8 +195,6 @@ const trip = ref(null)
 const loading = ref(true)
 const grabbing = ref(false)
 const currentImageIndex = ref(0)
-const showUserModal = ref(false)
-const selectedUser = ref(null)
 
 // parse trip images from JSON string
 const tripImages = computed(() => {
@@ -431,49 +389,13 @@ function getUserInitial(trip) {
 }
 
 function showUserProfile(user) {
-  if (user) {
-    selectedUser.value = user
-    showUserModal.value = true
+  if (user && user.open_id) {
+    // navigate to user profile page
+    router.push(`/user/${user.open_id}`)
   }
 }
 </script>
 
 <style scoped>
-.user-profile-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
 
-.user-profile-modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, .5);
-}
-
-.user-profile-modal-content {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-  background: #fff;
-  border-radius: 24px 24px 0 0;
-  padding: 24px;
-  animation: slideUp .3s ease;
-}
-
-[data-theme="dark"] .user-profile-modal-content {
-  background: #1f2937;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
 </style>

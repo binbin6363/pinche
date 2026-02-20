@@ -1,12 +1,13 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
 	"pinche/config"
 	"pinche/internal/handler"
 	"pinche/internal/middleware"
 	"pinche/internal/service"
 	"pinche/internal/websocket"
+
+	"github.com/gin-gonic/gin"
 )
 
 func Setup(cfg *config.Config, wsHub *websocket.Hub) *gin.Engine {
@@ -37,6 +38,7 @@ func Setup(cfg *config.Config, wsHub *websocket.Hub) *gin.Engine {
 	wsHandler := handler.NewWebSocketHandler(wsHub, userService)
 	announcementHandler := handler.NewAnnouncementHandler(announcementService)
 	uploadHandler := handler.NewUploadHandler(uploadService, userService)
+	friendHandler := handler.NewFriendHandler()
 
 	// public routes
 	r.POST("/api/user/register", userHandler.Register)
@@ -85,13 +87,24 @@ func Setup(cfg *config.Config, wsHub *websocket.Hub) *gin.Engine {
 		auth.GET("/messages/unread-count", messageHandler.GetUnreadCount)
 
 		// upload
-		auth.POST("/upload/image", uploadHandler.UploadImage)
+		auth.POST("/upload", uploadHandler.Upload)
 		auth.GET("/resource/url", uploadHandler.GetSignedURL)
+
+		// friends
+		auth.POST("/friends/request", friendHandler.SendFriendRequest)
+		auth.GET("/friends/requests", friendHandler.GetFriendRequests)
+		auth.POST("/friends/requests/:id/accept", friendHandler.AcceptFriendRequest)
+		auth.POST("/friends/requests/:id/reject", friendHandler.RejectFriendRequest)
+		auth.DELETE("/friends/requests/:id", friendHandler.CancelFriendRequest)
+		auth.GET("/friends", friendHandler.GetFriends)
+		auth.GET("/friends/count", friendHandler.GetFriendCount)
+		auth.DELETE("/friends/:id", friendHandler.DeleteFriend)
+		auth.GET("/users/:id/profile", friendHandler.GetUserProfile)
 	}
 
 	// admin routes
 	r.POST("/api/admin/login", userHandler.AdminLogin)
-	
+
 	admin := r.Group("/api/admin")
 	admin.Use(middleware.AdminAuthMiddleware(cfg))
 	{
